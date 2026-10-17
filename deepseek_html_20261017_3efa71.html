@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CGAPH Stress Test Engine</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 20% 0%,#0b1e2a,#05070d 60%);color:#d8f3ee;font:14px/1.4 "Segoe UI",system-ui,sans-serif;min-height:100vh}
+h1{margin:0;font-size:26px;letter-spacing:4px;color:#00ff9d;text-shadow:0 0 14px #00ff9d88}
+h1 span{color:#00e5ff}
+h2{margin:0 0 10px;font-size:13px;letter-spacing:2px;color:#00e5ff;text-transform:uppercase}
+header{padding:18px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+#cloud{font-size:12px;color:#7fa}
+.hdright{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+#devtag{font-size:11px;letter-spacing:1px;color:#00ff9d;border:1px solid #00ff9d55;border-radius:6px;padding:3px 8px}
+.tag{display:inline-block;font-size:10px;font-weight:400;letter-spacing:1px;padding:2px 7px;border-radius:6px;background:#00e5ff22;color:#00e5ff;border:1px solid #00e5ff44;vertical-align:middle;margin-left:6px}
+.tag.local{background:#ffb30022;color:#ffb300;border-color:#ffb30055}
+main{display:grid;grid-template-columns:320px 1fr;gap:16px;padding:0 28px 28px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(0,255,200,.2);border-radius:14px;padding:16px;backdrop-filter:blur(10px);box-shadow:0 0 22px rgba(0,255,200,.06)}
+.col{display:flex;flex-direction:column;gap:16px}
+label{display:block;margin-top:10px;color:#9fd;font-size:12px}
+input[type=text]{width:100%;background:#0a1018;color:#d8f3ee;border:1px solid #00e5ff55;border-radius:8px;padding:8px}
+button{cursor:pointer;border:0;border-radius:10px;padding:12px;font-weight:700;letter-spacing:2px;width:100%;margin-top:14px}
+button:disabled{cursor:not-allowed;opacity:.45}
+#go{background:linear-gradient(90deg,#00ff9d,#00e5ff);color:#021}
+#go.stop{background:#ff3d6e;color:#fff}
+.tele{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tele .card{text-align:center}
+.tele b{display:block;font-size:26px;color:#00ff9d;text-shadow:0 0 10px #00ff9d66}
+.tele small{color:#8ab}
+#bar{height:6px;background:#12202a;border-radius:4px;margin-top:12px;overflow:hidden}
+#bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#00ff9d,#00e5ff);transition:width .4s linear}
+#gpuwrap{height:340px;border-radius:10px;overflow:hidden;background:#000;position:relative}
+#gpuwrap canvas{display:block;width:100%;height:100%}
+#chartwrap{height:260px}
+.hw{font-size:12px;color:#9ab;word-break:break-word}.hw b{color:#00ff9d}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tabs button{width:auto;margin:0;padding:7px 12px;background:#0a1620;color:#9fd;border:1px solid #00e5ff44;font-size:12px}
+.tabs button.on{background:#00e5ff;color:#012}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #ffffff12;white-space:nowrap}
+th{color:#00e5ff}
+table.res{margin-top:10px}
+table.res td,table.res th{padding:4px 6px;font-size:11px;white-space:normal}
+#result{display:none;margin-top:12px;font-size:13px}
+#result b{color:#00ff9d}
+#modal,#guard,#warn{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50;background:rgba(2,5,10,.9)}
+#guard{z-index:99;flex-direction:column;text-align:center;padding:30px;background:#05070d;color:#ff3d6e}
+#guard h2{font-size:30px;color:#ff3d6e;text-shadow:0 0 18px #ff3d6e;letter-spacing:3px}
+#guard p{color:#9fd;max-width:560px;font-size:13px}
+#guard .gbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+#guard button{width:auto;min-width:230px;padding:14px 20px;margin:0;font-size:12px}
+#gGo{background:linear-gradient(90deg,#00ff9d,#00e5ff);color:#021}
+#gView{background:#0a1620;color:#9fd;border:1px solid #00e5ff55}
+#warn{z-index:70;background:rgba(2,5,10,.92)}
+#warn .card{width:480px;max-width:94vw;background:#08121a;border-color:#ff3d6e66}
+#warn h2{color:#ff3d6e;text-shadow:0 0 18px #ff3d6e66;margin-bottom:8px}
+#warn p{margin:0 0 8px;color:#d8f3ee;font-size:13px}
+#warn ul{margin:8px 0;padding-left:20px;color:#9fd;font-size:13px}
+#warn li{margin:4px 0}
+#warnGo{background:linear-gradient(90deg,#ff3d6e,#ff6d3d);color:#fff}
+#warnCancel{background:#1a2a36;color:#9fd}
+#modal .card{width:440px;max-width:94vw;max-height:90vh;overflow:auto;background:#08121a}
+.intro{margin:0 28px 16px;color:#9bc;max-width:760px}
+.hint{font-size:11px;color:#7a9;margin-top:8px}
+#status{margin-top:8px;font-size:12px;color:#9fd;text-align:center}
+#ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#456;z-index:1;pointer-events:none;text-align:center;padding:20px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#ff3d6e;color:#fff;padding:10px 18px;border-radius:10px;display:none;z-index:80;max-width:90vw;text-align:center}
+.lbbtn{width:auto;margin:0;padding:9px 16px;background:#0a1d26;color:#00e5ff;border:1px solid #00e5ff66;font-size:12px}
+#lbModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;background:rgba(2,5,10,.88)}
+#lbModal .card{width:min(1100px,94vw);max-height:88vh;overflow:auto;background:#08121a}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+@media(max-width:1100px){main{grid-template-columns:1fr}.tele{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="guard" role="dialog" aria-modal="true" aria-labelledby="gh">
+  <h2 id="gh">&#9888; MOBILE DEVICE DETECTED</h2>
+  <p id="gmsg">The benchmark runs the full <b>60 seconds</b> at maximum load. On a phone or tablet that pushes battery and thermal limits hard. Your score goes to the separate <b>mobile leaderboard</b>.</p>
+  <div class="gbtns">
+    <button type="button" id="gGo">CONTINUE IN MOBILE MODE</button>
+    <button type="button" id="gView">BROWSE LEADERBOARD ONLY</button>
+  </div>
+</div>
+
+<header>
+  <h1>CGAPH <span>STRESS TEST ENGINE</span></h1>
+  <div class="hdright">
+    <span id="devtag">-</span>
+    <div id="cloud">Cloud: connecting&hellip;</div>
+    <button type="button" id="lbOpen" class="lbbtn">&#127942; LEADERBOARD</button>
+  </div>
+</header>
+<p class="intro">One fixed <b>60-second maximum-load</b> benchmark of CPU, GPU and RAM. Keep this tab in the foreground for the whole run &mdash; a hidden tab is throttled by the browser and the run will be discarded.</p>
+
+<main>
+<div class="col">
+ <div class="card">
+  <h2>Hardware</h2>
+  <div class="hw">CPU threads: <b id="hwc">-</b><br>GPU: <b id="hwg">-</b><br>System RAM: <b id="hwr">-</b></div>
+ </div>
+ <div class="card">
+  <h2>60-Second Full-Load Test</h2>
+  <div class="hint" style="margin-top:0">All CPU threads, a large RAM buffer and heavy GPU load run simultaneously. Fans may get loud and the system may lag &mdash; you will be warned before each run.</div>
+  <button type="button" id="go">START 60-SECOND TEST</button>
+  <div id="bar"><i></i></div>
+  <div id="status" role="status">Ready. Press start to run the 60-second test.</div>
+  <div id="result"></div>
+ </div>
+</div>
+
+<div class="col">
+ <div class="tele" aria-live="off">
+  <div class="card"><small>CPU THROUGHPUT</small><b id="tc">0</b><small>MOps/s</small></div>
+  <div class="card"><small>GPU FRAME RATE</small><b id="tf">0</b><small>FPS</small></div>
+  <div class="card"><small>FRAME TIME</small><b id="tm">0</b><small>ms</small></div>
+  <div class="card"><small>RAM BANDWIDTH</small><b id="tr">0</b><small>GB/s</small></div>
+ </div>
+ <div class="card"><h2>GPU Scene &middot; 100k particles + 400 high-poly meshes</h2><div id="gpuwrap"><div id="ph">The 3D scene appears here when the GPU test starts.</div></div></div>
+ <div class="card"><h2>Live Analytics</h2><div id="chartwrap"><canvas id="chart"></canvas></div></div>
+</div>
+</main>
+
+<div id="toast" role="alert"></div>
+<div id="ann" class="sr" aria-live="polite"></div>
+
+<div id="warn" role="dialog" aria-modal="true" aria-labelledby="wh">
+  <div class="card">
+    <h2 id="wh">&#9888; High Load Warning</h2>
+    <p>This benchmark pushes your system to maximum load for 60 seconds:</p>
+    <ul>
+      <li><b>All CPU threads</b> at full throttle</li>
+      <li><b>Large RAM buffer</b> held and hammered</li>
+      <li><b>GPU at max load</b> plus VRAM ballast</li>
+    </ul>
+    <p style="color:#ffb300">Your fans will likely spin up loudly, the system may lag, and this tab may become unresponsive. Close other tabs first. An aborted run is not scored.</p>
+    <button type="button" id="warnGo">PROCEED WITH FULL LOAD</button>
+    <button type="button" id="warnCancel">CANCEL</button>
+  </div>
+</div>
+
+<div id="lbModal" role="dialog" aria-modal="true" aria-labelledby="lbh"><div class="card">
+ <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+  <h2 style="margin:0" id="lbh">Leaderboard <span class="tag" id="lbtag">-</span></h2>
+  <button type="button" id="lbClose" class="lbbtn">CLOSE</button>
+ </div>
+ <div class="tabs" id="tabs" style="margin-top:12px"></div>
+ <table><thead><tr><th>#</th><th>Name</th><th>Score</th><th>CPU</th><th>RAM</th><th>GPU</th><th>Date</th></tr></thead><tbody id="rows"></tbody></table>
+</div></div>
+
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="card">
+ <h2 id="mh">Benchmark complete</h2>
+ <div id="mres"></div>
+ <label>Tester Name<input type="text" id="tname" maxlength="24" placeholder="Enter your name"></label>
+ <button type="button" id="save" style="background:#00ff9d;color:#021">SUBMIT TO LEADERBOARD</button>
+ <button type="button" id="skip" style="background:#1a2a36;color:#9fd">SKIP</button>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script type="module">
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>t.style.display='none',5000)}
+const announce=m=>{$('ann').textContent=m};
+
+const FB_CFG={apiKey:"AIzaSyBdr5LEre_vFuaKfL3kz0LTFp5-QYylXhc",authDomain:"cpupowerhouse.firebaseapp.com",projectId:"cpupowerhouse",storageBucket:"cpupowerhouse.firebasestorage.app",messagingSenderId:"602891392481",appId:"1:602891392481:web:d6e823abeacafeb1b4eea0",measurementId:"G-ZELYFWFHP9"};
+
+/* ---------- Config ---------- */
+const ALLOW_MOBILE_TESTS=true;   // false => mobile is browse-only
+const TEST_DURATION=60;          // seconds, fixed for everyone
+const WARMUP_SEC=3;              // discarded head of the run
+const TAIL_SEC=1;                // discarded tail (partial final tick)
+
+/* ---------- Device class ---------- */
+const isMobileDevice=()=>/Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|Kindle|webOS/i.test(navigator.userAgent)
+  ||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const IS_MOBILE=isMobileDevice();
+let mobileLocked=!ALLOW_MOBILE_TESTS&&IS_MOBILE;
+const BOARD_ID=IS_MOBILE?'leaderboard_mobile':'leaderboard';
+const LS_KEY=IS_MOBILE?'cgaph_lb_mobile':'cgaph_lb';
+$('devtag').textContent=IS_MOBILE?'MOBILE':'DESKTOP';
+$('lbtag').textContent=IS_MOBILE?'MOBILE':'DESKTOP';
+
+/* ---------- Library capability guards ---------- */
+const HAS_THREE=typeof THREE!=='undefined';
+const HAS_CHART=typeof Chart!=='undefined';
+const HAS_WORKER=typeof Worker!=='undefined';
+function webglOK(){try{const c=document.createElement('canvas');return !!(c.getContext('webgl2')||c.getContext('webgl'))}catch(e){return false}}
+const HAS_WEBGL=webglOK();
+
+/* ---------- Hardware detection ---------- */
+let cores=navigator.hardwareConcurrency;
+if(!Number.isFinite(cores)||cores<1)cores=8;
+let gpuModel='Generic WebGL Hardware Renderer';
+try{
+ const gl=document.createElement('canvas').getContext('webgl')||document.createElement('canvas').getContext('experimental-webgl');
+ const ext=gl&&gl.getExtension('WEBGL_debug_renderer_info');
+ const r=ext&&gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+ if(r&&String(r).trim())gpuModel=String(r).trim();
+}catch(e){}
+/* deviceMemory is deliberately capped at 8 by the spec — never claim more. */
+const sysGB=navigator.deviceMemory||0;
+$('hwc').textContent=cores;
+$('hwg').textContent=gpuModel;
+$('hwr').textContent=sysGB?(sysGB>=8?'8 GB or more':sysGB+' GB'):'unknown';
+
+/* ---------- Full-load targets (no UI, always maximum) ---------- */
+/* CPU: every available thread. RAM: as much as is safe without OOMing the box.
+   VRAM: 8 GB target on desktop, 2 GB on mobile — the allocation loop stops
+   cleanly when the GPU runs out, so this is a ceiling not a guarantee. */
+const CPU_THREADS = cores;
+const RAM_MB = Math.max(512, Math.min(2048, Math.floor(((sysGB||4)*1024*0.4)/128)*128));
+const VRAM_GB = IS_MOBILE ? 2 : 8;
+
+/* ---------- Workers ---------- */
+/* mix() is SHA-256 *shaped*: same compression structure and round count, but a
+   derived constant table and reduced output. It is a deterministic CPU workload,
+   not a correct SHA-256. */
+const CPU_SRC=`
+const K=new Uint32Array(64);{let n=2,c=0;while(c<64){let p=1;for(let i=2;i*i<=n;i++)if(n%i==0){p=0;break}if(p)K[c++]=Math.floor((Math.pow(n,1/3)%1)*4294967296);n++}}
+const W=new Uint32Array(64);
+function mix(w){W.set(w);
+ for(let i=16;i<64;i++){const a=W[i-15],b=W[i-2];W[i]=W[i-16]+((a>>>7|a<<25)^(a>>>18|a<<14)^(a>>>3))+W[i-7]+((b>>>17|b<<15)^(b>>>19|b<<13)^(b>>>10))|0}
+ let a=0x6a09e667,b=0xbb67ae85,c=0x3c6ef372,d=0xa54ff53a,e=0x510e527f,f=0x9b05688c,g=0x1f83d9ab,h=0x5be0cd19;
+ for(let i=0;i<64;i++){const t1=h+((e>>>6|e<<26)^(e>>>11|e<<21)^(e>>>25|e<<7))+((e&f)^(~e&g))+K[i]+W[i]|0;const t2=((a>>>2|a<<30)^(a>>>13|a<<19)^(a>>>22|a<<10))+((a&b)^(a&c)^(b&c))|0;h=g;g=f;f=e;e=d+t1|0;d=c;c=b;b=a;a=t1+t2|0}
+ return a^e}
+const N=48,A=new Float64Array(N*N),B=new Float64Array(N*N),C=new Float64Array(N*N);
+for(let i=0;i<N*N;i++){A[i]=Math.random();B[i]=Math.random()}
+function mm(){for(let i=0;i<N;i++)for(let j=0;j<N;j++){let s=0;for(let k=0;k<N;k++)s+=A[i*N+k]*B[k*N+j];C[i*N+j]=s}A[0]=C[5]%1+.5}
+function factor(n){let it=0,f=2;while(f*f<=n){it++;if(n%f==0)n/=f;else f+=f==2?1:2}return it}
+const blk=new Uint32Array(16);let ops=0,last=performance.now(),acc=0;
+function run(){const t=performance.now();
+ while(performance.now()-t<50){mm();ops+=2*N*N*N;
+  for(let r=0;r<100;r++){blk[0]=r+acc;acc^=mix(blk)}ops+=100*64*25;
+  ops+=factor(900000000+(Math.random()*1e8|0))*4}
+ const n=performance.now();if(n-last>=500){postMessage({r:ops/((n-last)/1000)/1e6,a:acc});ops=0;last=n}
+ setTimeout(run,0)}
+run();`;
+const RAM_SRC=`
+onmessage=e=>{let a,mb=e.data;while(mb>=16){try{a=new Float64Array(mb*131072);break}catch(x){mb>>=1}}if(!a){postMessage({err:1});return}postMessage({mb});
+ const n=a.length;let bytes=0,last=performance.now(),s=0,x=1;
+ for(;;){for(let i=0;i<n;i++)a[i]=i*1.0001+x;
+  for(let i=0;i<n;i++)s+=a[i];
+  a.copyWithin(0,n>>1);x+=s%3;
+  bytes+=n*8*2+n*8;
+  const t=performance.now();if(t-last>=500){postMessage({r:bytes/((t-last)/1000)/1e9});bytes=0;last=t}}}`;
+const mkWorker=src=>{
+ const url=URL.createObjectURL(new Blob([src],{type:'text/javascript'}));
+ const w=new Worker(url);
+ URL.revokeObjectURL(url);   // the worker keeps its own copy
+ return w;
+};
+
+/* ---------- GPU engine ---------- */
+let R,scene,cam,group,lights,U,raf=null,clock,vtex=[],gpuDead=false;
+let fps=0,ms=0,frames=0,fT=0;
+
+function buildGPU(){
+ const wrap=$('gpuwrap');
+ R=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+ R.setPixelRatio(Math.min(devicePixelRatio,2));
+ R.setSize(wrap.clientWidth,wrap.clientHeight);
+ wrap.appendChild(R.domElement);
+ R.domElement.addEventListener('webglcontextlost',e=>{
+   e.preventDefault();gpuDead=true;
+   if(running){toast('GPU context lost — GPU module dropped from this run.');S.mods.gpu=false;}
+ });
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x02060a);
+ cam=new THREE.PerspectiveCamera(60,wrap.clientWidth/wrap.clientHeight,.1,500);cam.position.z=55;
+ group=new THREE.Group();scene.add(group);
+ const NP=100000,pos=new Float32Array(NP*3),seed=new Float32Array(NP);
+ for(let i=0;i<NP;i++){const r=5+Math.random()*35,u=Math.random()*2-1,t=Math.random()*6.283,s=Math.sqrt(1-u*u);
+  pos[i*3]=r*s*Math.cos(t);pos[i*3+1]=r*u;pos[i*3+2]=r*s*Math.sin(t);seed[i]=Math.random()}
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+ g.setAttribute('aS',new THREE.BufferAttribute(seed,1));
+ U={uTime:{value:0}};
+ group.add(new THREE.Points(g,new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  vertexShader:`uniform float uTime;attribute float aS;varying float vC;void main(){vec3 p=position;float a=uTime*(0.2+aS*0.6)/(1.0+length(p.xz)*0.05);float c=cos(a),s=sin(a);p.xz=mat2(c,-s,s,c)*p.xz;p.y+=sin(uTime+aS*20.0)*2.0;vC=aS;vec4 mv=modelViewMatrix*vec4(p,1.0);gl_PointSize=min(3.0,60.0/-mv.z)+1.0;gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`varying float vC;void main(){gl_FragColor=vec4(mix(vec3(0.0,1.0,0.6),vec3(0.0,0.9,1.0),vC),0.6);}`})));
+ const NI=400;
+ const im=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,3),new THREE.MeshStandardMaterial({color:0x1a2a3a,metalness:.9,roughness:.25}),NI);
+ const d=new THREE.Object3D();
+ for(let i=0;i<NI;i++){const a=i*.5,r=12+(i%20)*1.2;d.position.set(Math.cos(a)*r,(i%7-3)*2,Math.sin(a)*r);d.scale.setScalar(.8);d.updateMatrix();im.setMatrixAt(i,d.matrix)}
+ group.add(im);
+ scene.add(new THREE.AmbientLight(0x223344,.6));
+ lights=[0x00ff9d,0x00e5ff,0xff3df2,0xffffff].map(c=>{const l=new THREE.PointLight(c,1.5,90);scene.add(l);return l});
+ clock=new THREE.Clock();
+}
+
+async function gpuStart(gb){
+ if(!HAS_THREE)throw new Error('three.js did not load');
+ if(!HAS_WEBGL)throw new Error('WebGL is not available');
+ if(!R)buildGPU();
+ gpuDead=false;fT=performance.now();frames=0;
+ if(R.capabilities.maxTextureSize<4096){toast('GPU cannot allocate 4K textures — VRAM ballast skipped.');gb=0}
+ if(gb>0){
+  try{
+   const data=new Uint8Array(4096*4096*4);
+   for(let i=0;i<data.length;i+=97)data[i]=i&255;
+   for(let i=0;i<gb*16&&running;i++){
+    const t=new THREE.DataTexture(data,4096,4096,THREE.RGBAFormat);
+    t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;
+    if(R.initTexture)R.initTexture(t);
+    vtex.push(t);
+    await new Promise(r=>setTimeout(r,0));
+   }
+  }catch(e){console.warn('VRAM alloc stopped',e)}
+ }
+ if(!running){vtex.forEach(t=>t.dispose());vtex=[];return}
+ const loop=()=>{
+  if(gpuDead||!running)return;
+  raf=requestAnimationFrame(loop);
+  const t=clock.getElapsedTime();U.uTime.value=t;group.rotation.y=t*.1;
+  lights.forEach((l,i)=>l.position.set(Math.sin(t*(.5+i*.2)+i)*30,Math.cos(t*(.4+i*.3))*20,Math.cos(t*(.6+i*.1)+i)*30));
+  R.render(scene,cam);frames++;
+  const n=performance.now();
+  if(n-fT>=500){fps=frames*1000/(n-fT);ms=(n-fT)/frames;frames=0;fT=n}
+ };
+ loop();
+}
+function gpuStop(){if(raf)cancelAnimationFrame(raf);raf=null;vtex.forEach(t=>t.dispose());vtex=[]}
+addEventListener('resize',()=>{if(R&&cam){const w=$('gpuwrap');R.setSize(w.clientWidth,w.clientHeight);cam.aspect=w.clientWidth/w.clientHeight;cam.updateProjectionMatrix()}});
+
+/* ---------- Chart (with graceful stub) ---------- */
+const ds=(label,color,axis)=>({label,data:[],borderColor:color,yAxisID:axis,tension:.3,pointRadius:0,borderWidth:2});
+let chart;
+if(HAS_CHART){
+ const tick=c=>({ticks:{color:c},grid:{color:'#ffffff10'}});
+ chart=new Chart($('chart'),{type:'line',data:{labels:[],datasets:[ds('CPU MOps/s','#00ff9d','y'),ds('GPU FPS','#00e5ff','y1'),ds('RAM GB/s','#ff3df2','y2')]},
+  options:{animation:false,maintainAspectRatio:false,responsive:true,
+   scales:{x:{ticks:{color:'#789'},grid:{color:'#ffffff08'}},
+    y:{position:'left',...tick('#00ff9d')},
+    y1:{position:'right',...tick('#00e5ff'),grid:{drawOnChartArea:false}},
+    y2:{position:'right',...tick('#ff3df2'),grid:{drawOnChartArea:false}}},
+   plugins:{legend:{labels:{color:'#cde'}}}}});
+}else{
+ chart={data:{labels:[],datasets:[{data:[]},{data:[]},{data:[]}]},update(){}};
+ $('chartwrap').innerHTML='<div class="hint">Chart library failed to load — live graph disabled. Benchmarking still works.</div>';
+}
+
+/* ---------- Stats helpers ---------- */
+const steady=a=>a.length>WARMUP_SEC+TAIL_SEC?a.slice(WARMUP_SEC,a.length-TAIL_SEC):a.slice();
+function stats(a){
+ if(!a.length)return null;
+ const s=[...a].sort((x,y)=>x-y);
+ const q=p=>s[Math.min(s.length-1,Math.max(0,Math.round((s.length-1)*p)))];
+ return {mean:a.reduce((x,y)=>x+y,0)/a.length,p5:q(.05),p50:q(.5),p95:q(.95),min:s[0],max:s[s.length-1],n:a.length};
+}
+const fmt=(v,d=1)=>v==null?'—':v.toFixed(d);
+
+/* ---------- Orchestrator ---------- */
+let running=false,t0=0,timer=null,cpuW=[],cpuRate=[],ramW=null,ramNow=0,ramUsed=0,S=null,last=null;
+
+function lockTests(){
+ mobileLocked=true;
+ $('go').disabled=true;$('go').textContent='TESTS DISABLED';$('go').classList.remove('stop');
+ $('status').textContent='Leaderboard-only mode. Reload the page to enable benchmarking.';
+}
+function showGuard(){
+ if(!IS_MOBILE)return;
+ if(!ALLOW_MOBILE_TESTS){
+  $('gGo').style.display='none';
+  $('gmsg').innerHTML='Benchmarking is disabled on mobile devices to protect battery and thermal limits. You can still browse the <b>mobile leaderboard</b>.';
+ }
+ $('guard').style.display='flex';
+ $('gGo').focus();
+}
+$('gGo').onclick=()=>{$('guard').style.display='none'};
+$('gView').onclick=()=>{$('guard').style.display='none';lockTests();openLB()};
+
+/* A hidden tab throttles rAF and timers, which silently corrupts GPU and CPU
+   scores. Abort honestly instead of publishing a bogus number. */
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden&&running)stop(false,'Run discarded: the tab lost focus. Keep it in the foreground for the full 60 s.');
+});
+
+async function start(){
+ if(running)return;
+ if(mobileLocked){toast('Benchmarking is disabled in leaderboard-only mode. Reload the page to enable it.');return}
+
+ S={mods:{cpu:HAS_WORKER,gpu:HAS_THREE&&HAS_WEBGL,ram:HAS_WORKER},c:[],g:[],r:[]};
+ if(!S.mods.cpu&&!S.mods.gpu&&!S.mods.ram){toast('No benchmark modules are available in this browser.');return}
+ if(!S.mods.gpu)toast('GPU module unavailable (WebGL or three.js missing) — running CPU/RAM only.');
+ if(!S.mods.cpu&&!S.mods.ram)toast('Worker support unavailable — running GPU only.');
+
+ running=true;t0=performance.now();
+ fps=0;ms=0;ramNow=0;ramUsed=S.mods.ram?RAM_MB:0;
+ ['tc','tf','tm','tr'].forEach(i=>$(i).textContent='0');
+ $('bar').firstChild.style.width='0%';
+ chart.data.labels=[];chart.data.datasets.forEach(d=>d.data=[]);chart.update();
+ $('go').textContent='STOP / ABORT TEST';$('go').classList.add('stop');
+ $('result').style.display='none';
+ $('ph').style.display=S.mods.gpu?'none':'flex';
+
+ const n=CPU_THREADS;cpuRate=new Array(n).fill(0);
+ if(S.mods.cpu){
+  for(let i=0;i<n;i++){
+   const w=mkWorker(CPU_SRC);
+   w.onmessage=e=>cpuRate[i]=e.data.r;
+   cpuW.push(w);
+  }
+ }
+ if(S.mods.ram){
+  ramW=mkWorker(RAM_SRC);
+  ramW.onmessage=e=>{
+   if(e.data.err){
+    toast('RAM allocation failed even at 16 MB — dropping RAM from this run.');
+    S.mods.ram=false;
+    return;
+   }
+   if(e.data.mb){
+    ramUsed=e.data.mb;
+    if(e.data.mb<RAM_MB)toast('Browser refused '+RAM_MB+' MB, so the test is using '+e.data.mb+' MB instead.');
+    return;
+   }
+   ramNow=e.data.r;
+  };
+  ramW.postMessage(RAM_MB);
+ }
+ timer=setInterval(sample,1000);
+ announce('60 second maximum-load benchmark started.');
+ if(S.mods.gpu){
+  try{await gpuStart(VRAM_GB)}
+  catch(e){
+   console.warn('GPU start failed',e);
+   S.mods.gpu=false;gpuStop();
+   toast('GPU test failed: '+e.message);
+  }
+ }
+}
+
+function sample(){
+ if(!running)return;
+ const el=(performance.now()-t0)/1000;
+ const c=S.mods.cpu?cpuRate.reduce((a,b)=>a+b,0):0;
+ $('tc').textContent=c.toFixed(0);
+ $('tf').textContent=fps.toFixed(0);
+ $('tm').textContent=ms.toFixed(1);
+ $('tr').textContent=ramNow.toFixed(2);
+ /* Only record real readings — an unreported value would drag the average to 0. */
+ if(S.mods.cpu&&c>0)S.c.push(c);
+ if(S.mods.gpu&&fps>0)S.g.push(fps);
+ if(S.mods.ram&&ramNow>0)S.r.push(ramNow);
+ chart.data.labels.push(el.toFixed(0)+'s');
+ [c,fps,ramNow].forEach((v,i)=>chart.data.datasets[i].data.push(v));
+ if(chart.data.labels.length>120){chart.data.labels.shift();chart.data.datasets.forEach(d=>d.data.shift())}
+ chart.update();
+ $('status').textContent=`Running... ${Math.max(0,Math.ceil(TEST_DURATION-el))}s left`;
+ $('bar').firstChild.style.width=Math.min(100,el/TEST_DURATION*100)+'%';
+ if(el>=TEST_DURATION)stop(true);
+}
+
+function stop(completed,message){
+ if(!running)return;
+ running=false;
+ clearInterval(timer);timer=null;
+ cpuW.forEach(w=>w.terminate());cpuW=[];
+ if(ramW){ramW.terminate();ramW=null}
+ gpuStop();
+ const elapsed=(performance.now()-t0)/1000;
+ $('go').textContent='START 60-SECOND TEST';$('go').classList.remove('stop');
+
+ if(!completed){
+  $('bar').firstChild.style.width='0%';
+  $('status').textContent=message||`Aborted after ${elapsed.toFixed(0)}s. A run must complete the full ${TEST_DURATION}s to be scored.`;
+  announce('Benchmark aborted, not scored.');
+  return;
+ }
+
+ const cs=stats(steady(S.c)),gs=stats(steady(S.g)),rs=stats(steady(S.r));
+ if(!cs&&!gs&&!rs){
+  $('status').textContent='Finished, but no module produced usable data.';
+  announce('Benchmark finished with no usable data.');
+  return;
+ }
+ const cpu=cs?Math.round(cs.p50/5):0;
+ const gpu=gs?Math.round(gs.p50*50):0;
+ const ram=rs?Math.round(rs.p50*250):0;
+ /* Renormalise the weights over whichever modules actually produced data,
+    so a failed GPU doesn't just contribute a zero to the composite. */
+ const parts=[];
+ if(cs)parts.push([cpu,.40]);
+ if(gs)parts.push([gpu,.35]);
+ if(rs)parts.push([ram,.25]);
+ const wsum=parts.reduce((a,p)=>a+p[1],0);
+ const total=wsum?Math.round(parts.reduce((a,p)=>a+p[0]*p[1],0)/wsum):0;
+
+ const mods=Object.keys(S.mods).filter(k=>S.mods[k]);
+ last={cpuScore:cpu,gpuScore:gpu,ramScore:ram,totalScore:total,
+  cores:CPU_THREADS,ramMB:S.mods.ram?ramUsed:0,sysRam:sysGB,
+  gpuModel,testDuration:Math.round(elapsed),platform:IS_MOBILE?'mobile':'desktop',
+  modules:mods.join('+'),
+  cpuSustained:cs?Math.round(cs.p5/cs.p95*100):null,
+  gpuSustained:gs?Math.round(gs.p5/gs.p95*100):null};
+
+ const tier=total<2500?'Entry level':total<5000?'Mainstream':total<8000?'Enthusiast':'Extreme';
+ const row=(label,st,score,unit)=>st
+  ?`<tr><td>${label}</td><td>${score}</td><td>${fmt(st.p50)}</td><td>${fmt(st.p5)}</td><td>${fmt(st.p95)}</td><td>${Math.round(st.p5/st.p95*100)}%</td><td>${unit}</td></tr>`
+  :`<tr><td>${label}</td><td colspan="6" style="color:#7a9">not run</td></tr>`;
+ $('mres').innerHTML=
+  `<div style="font-size:15px;margin-bottom:6px">Overall CGAPH Score: <b>${total}</b> <span style="color:#8ab;font-size:12px">(${tier})</span></div>
+   <table class="res"><thead><tr><th>Module</th><th>Score</th><th>Median</th><th>p5</th><th>p95</th><th>Sustained</th><th>Unit</th></tr></thead><tbody>
+   ${row('CPU',cs,cpu,'MOps/s')}${row('GPU',gs,gpu,'FPS')}${row('RAM',rs,ram,'GB/s')}
+   </tbody></table>
+   <div class="hint" style="margin-top:8px">Sustained = p5 &divide; p95. Below ~85% means the component throttled during the run. Posting to the <b>${IS_MOBILE?'MOBILE':'DESKTOP'}</b> leaderboard.</div>`;
+ $('result').innerHTML=`CPU <b>${cpu}</b> &middot; GPU <b>${gpu}</b> &middot; RAM <b>${ram}</b> &mdash; Overall <b>${total}</b> (${tier})`;
+ $('result').style.display='block';
+ $('modal').style.display='flex';
+ $('tname').focus();
+ $('status').textContent='Finished! Open the Leaderboard to see rankings.';
+ announce(`Benchmark complete. Overall score ${total}, ${tier}.`);
+}
+
+/* Warning modal before every run. */
+$('go').onclick=()=>{
+ if(running){stop(false);return}
+ if(mobileLocked){toast('Benchmarking is disabled in leaderboard-only mode. Reload the page to enable it.');return}
+ $('warn').style.display='flex';
+ $('warnGo').focus();
+};
+$('warnGo').onclick=()=>{$('warn').style.display='none';start()};
+$('warnCancel').onclick=()=>{$('warn').style.display='none'};
+$('warn').onclick=e=>{if(e.target===$('warn'))$('warn').style.display='none'};
+
+/* ---------- Leaderboard ---------- */
+let fb=null,tab='totalScore';
+const lsGet=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch(e){return[]}};
+const lsSet=v=>{try{localStorage.setItem(LS_KEY,JSON.stringify(v.slice(-200)))}catch(e){}};
+function dedupe(rows){
+ const seen=new Set(),out=[];
+ for(const r of rows){
+  const k=(r.name||'anon')+'@'+(r.timestamp||0)+'@'+(r.totalScore||0);
+  if(seen.has(k))continue;
+  seen.add(k);out.push(r);
+ }
+ return out;
+}
+const TABS=[['totalScore','Overall Top'],['cpuScore','CPU Leaders'],['gpuScore','GPU Leaders'],['ramScore','RAM Leaders']];
+TABS.forEach(([k,n])=>{
+ const b=document.createElement('button');
+ b.type='button';b.textContent=n;b.className=k===tab?'on':'';
+ b.onclick=()=>{tab=k;[...$('tabs').children].forEach(x=>x.className=x===b?'on':'');loadBoard()};
+ $('tabs').appendChild(b);
+});
+async function loadBoard(){
+ let rows=[];
+ if(fb)try{
+  const {collection,query,orderBy,limit,getDocs}=fb.fs;
+  const s=await getDocs(query(collection(fb.db,BOARD_ID),orderBy(tab,'desc'),limit(50)));
+  s.forEach(d=>rows.push(d.data()));
+ }catch(e){console.warn('leaderboard read failed',e)}
+ /* Local-only rows are flagged so a cached score can't masquerade as a global one. */
+ const local=lsGet().map(r=>({...r,_local:true}));
+ rows=dedupe(rows.concat(local)).sort((a,b)=>(b[tab]||0)-(a[tab]||0)).slice(0,50);
+ const tb=$('rows');tb.textContent='';
+ if(!rows.length){
+  const tr=tb.insertRow(),td=tr.insertCell();
+  td.colSpan=7;td.textContent=`No scores yet on the ${IS_MOBILE?'mobile':'desktop'} leaderboard. Run the 60-second benchmark!`;
+  return;
+ }
+ rows.forEach((r,i)=>{
+  const tr=tb.insertRow();
+  const cells=[
+   i+1,
+   null, // name, built below
+   r[tab]||0,
+   r.cores?`${r.cores} threads${r.modules&&r.modules!=='cpu+gpu+ram'?' · '+r.modules:''}`:'?',
+   r.ramMB?r.ramMB+' MB tested'+(r.sysRam?' · ~'+r.sysRam+'+ GB system':''):'n/a',
+   String(r.gpuModel||'n/a').slice(0,45),
+   r.timestamp?new Date(r.timestamp).toLocaleString():''
+  ];
+  cells.forEach((v,idx)=>{
+   const td=tr.insertCell();
+   if(idx===1){
+    td.textContent=r.name||'Anonymous';
+    if(r._local){
+     const sp=document.createElement('span');
+     sp.className='tag local';sp.textContent='LOCAL';
+     td.appendChild(sp);
+     td.title='Saved in this browser only — not on the global leaderboard.';
+    }
+   }else{
+    td.textContent=v;
+   }
+  });
+ });
+}
+function openLB(){$('lbModal').style.display='flex';loadBoard()}
+$('lbOpen').onclick=openLB;
+$('lbClose').onclick=()=>$('lbModal').style.display='none';
+$('lbModal').onclick=e=>{if(e.target===$('lbModal'))$('lbModal').style.display='none'};
+addEventListener('keydown',e=>{
+ if(e.key==='Escape'){$('lbModal').style.display='none';$('modal').style.display='none';$('warn').style.display='none'}
+});
+$('skip').onclick=()=>$('modal').style.display='none';
+$('tname').onkeydown=e=>{if(e.key==='Enter')$('save').click()};
+$('save').onclick=async()=>{
+ if(!last){$('modal').style.display='none';return}
+ const rec={name:($('tname').value.trim()||'Anonymous').slice(0,24),...last,timestamp:Date.now()};
+ $('save').disabled=true;let ok=false;
+ if(fb)try{await fb.fs.addDoc(fb.fs.collection(fb.db,BOARD_ID),rec);ok=true}
+ catch(e){console.warn(e);toast('Cloud save failed ('+(e.code||e.message)+'). Saved locally instead.')}
+ if(!ok){lsSet(lsGet().concat(rec));if(!fb)toast('Cloud is offline, so your score was saved locally only.')}
+ $('save').disabled=false;$('modal').style.display='none';openLB();
+};
+
+/* ---------- Boot ---------- */
+if(IS_MOBILE&&!ALLOW_MOBILE_TESTS)lockTests();
+showGuard();
+
+/* Nudge mobile users on low battery before they burn 60 s of it. */
+if(IS_MOBILE&&navigator.getBattery){
+ navigator.getBattery().then(b=>{
+  if(!b.charging&&b.level<0.2)toast('Battery below 20% — plug in first for a fair mobile score.');
+ }).catch(()=>{});
+}
+
+(async()=>{
+ try{
+  const V='https://www.gstatic.com/firebasejs/10.12.2/';
+  const {initializeApp}=await import(V+'firebase-app.js');
+  const {getAuth,signInAnonymously}=await import(V+'firebase-auth.js');
+  const fs=await import(V+'firebase-firestore.js');
+  const app=initializeApp(FB_CFG);
+  await signInAnonymously(getAuth(app));
+  fb={db:fs.getFirestore(app),fs};
+  $('cloud').textContent='Cloud: online';
+ }catch(e){
+  console.warn('Firebase unavailable, using local leaderboard',e);
+  $('cloud').textContent='Cloud: offline ('+(e.code||e.message)+')';
+ }
+ loadBoard();
+})();
+</script>
+</body>
+</html>
